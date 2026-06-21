@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ErgoX — Gestão Ergonômica</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+</head>
+<body>
+
+<!-- ===== PARTÍCULAS DE FUNDO ===== -->
+<div class="bg-grid"></div>
+
+<!-- ===== TELA DE LOGIN ===== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <img src="assets/logo.png" alt="ErgoX" class="login-logo-img">
+    </div>
+    <h2 class="login-title">Bem‑vindo ao ErgoX</h2>
+    <p class="login-sub">Insira suas credenciais para acessar o sistema</p>
+    <form class="login-form" onsubmit="Auth.handleLogin(event)">
+      <div class="lf-group">
+        <label>Usuário</label>
+        <input type="text" id="login-user" required autocomplete="username" placeholder="Digite seu usuário">
+      </div>
+      <div class="lf-group">
+        <label>Senha</label>
+        <input type="password" id="login-pass" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button type="submit" class="btn-login" id="btnLogin">
+        <span class="btn-login-text">Entrar</span>
+        <span class="btn-login-spinner" style="display:none">↻</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== APLICAÇÃO (visível após login) ===== -->
+<div class="app-wrapper" id="appWrapper" style="display:none">
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="assets/logo.png" alt="ErgoX" class="logo-img" onerror="this.style.display='none'">
+        <span class="logo-fallback">ERGO<span>X</span></span>
+      </div>
+      <div class="header-right">
+        <span class="user-chip" id="userChip"></span>
+        <span class="last-update" id="lastUpdate"></span>
+        <button class="btn-clients admin-only" id="btnClients" onclick="ClientMgr.open()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Clientes
+        </button>
+        <button class="btn-refresh" id="btnRefresh" onclick="App.refresh()">
+          <span class="refresh-icon">↻</span> Atualizar
+        </button>
+        <button class="btn-logout" onclick="Auth.logout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== NAV ===== -->
+  <nav class="tab-nav">
+    <button class="tab-btn admin-only" data-tab="lancamentos">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Lançamentos
+    </button>
+    <button class="tab-btn" data-tab="aet">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      Análise Ergonômica
+    </button>
+    <button class="tab-btn" data-tab="pa">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Planos de Ação
+    </button>
+    <button class="tab-btn" data-tab="fisio">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Admissional Fisioterapia
+    </button>
+  </nav>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+
+    <!-- ==================== AET TAB ==================== -->
+    <section class="tab-content" id="tab-aet">
+
+      <div class="filter-bar">
+        <select id="aet-filter-cliente" onchange="AET.onFilter()" class="admin-only"><option value="">Todos os Clientes</option></select>
+        <select id="aet-filter-setor" onchange="AET.onFilter()"><option value="">Todos os Setores</option></select>
+        <select id="aet-filter-criticidade" onchange="AET.onFilter()">
+          <option value="">Todas as Criticidades</option>
+          <option>ALTÍSSIMO RISCO</option><option>ALTO</option>
+          <option>MODERADO</option><option>BAIXO</option>
+          <option>AUSÊNCIA DE RISCO</option><option>EXTINTO</option>
+        </select>
+        <select id="aet-filter-genero" onchange="AET.onFilter()">
+          <option value="">Todos os Gêneros</option>
+          <option>Masculino</option><option>Feminino</option><option>Unissex</option>
+        </select>
+        <select id="aet-filter-mes" onchange="AET.onFilter()">
+          <option value="">Todos os Meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="aet-filter-ano" onchange="AET.onFilter()"><option value="">Todos os Anos</option></select>
+        <select id="aet-filter-gerente" onchange="AET.onFilter()"><option value="">Todos os Gerentes</option></select>
+        <button class="btn-clear-filter" onclick="AET.clearFilters()">✕ Limpar</button>
+      </div>
+
+      <div class="cards-grid" id="aet-cards">
+        <div class="card card-primary">
+          <div class="card-icon">⬡</div>
+          <div class="card-value" id="aet-total">—</div>
+          <div class="card-label">Total de Postos</div>
+        </div>
+        <div class="card card-purple">
+          <div class="card-icon">⚠</div>
+          <div class="card-value" id="aet-altissimo">—</div>
+          <div class="card-label">Altíssimo Risco</div>
+        </div>
+        <div class="card card-danger">
+          <div class="card-icon">▲</div>
+          <div class="card-value" id="aet-alto">—</div>
+          <div class="card-label">Alto Risco</div>
+        </div>
+        <div class="card card-warning">
+          <div class="card-icon">◆</div>
+          <div class="card-value" id="aet-moderado">—</div>
+          <div class="card-label">Moderado</div>
+        </div>
+        <div class="card card-success">
+          <div class="card-icon">●</div>
+          <div class="card-value" id="aet-baixo">—</div>
+          <div class="card-label">Baixo Risco</div>
+        </div>
+        <div class="card card-muted">
+          <div class="card-icon">○</div>
+          <div class="card-value" id="aet-extinto">—</div>
+          <div class="card-label">Extinto/Desativado</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3 class="chart-title">Distribuição por Gênero</h3>
+          <div class="chart-container chart-donut">
+            <canvas id="aet-chart-genero"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Criticidade por Setor (Top 10)</h3>
+          <div class="chart-scroll-outer">
+            <div class="chart-scroll-inner">
+              <canvas id="aet-chart-crit"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Postos de Trabalho</h3>
+          <input type="text" class="search-input" id="aet-search" placeholder="Buscar posto, setor…" oninput="AET.search(this.value)">
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th><th>Cliente</th><th>Setor</th><th>Posto de Trabalho</th>
+                <th>Criticidade</th><th>Gênero</th><th>Gerente</th>
+                <th class="admin-only" style="min-width:100px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="aet-tbody">
+              <tr><td colspan="8" class="table-loading">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer"><span id="aet-count">—</span></div>
+      </div>
+    </section>
+
+    <!-- ==================== PA TAB ==================== -->
+    <section class="tab-content" id="tab-pa">
+
+      <div class="filter-bar">
+        <select id="pa-filter-cliente" onchange="PA.onFilter()" class="admin-only"><option value="">Todos os Clientes</option></select>
+        <select id="pa-filter-setor" onchange="PA.onFilter()"><option value="">Todos os Setores</option></select>
+        <select id="pa-filter-criticidade" onchange="PA.onFilter()">
+          <option value="">Todas as Criticidades</option>
+          <option>ALTÍSSIMO RISCO</option><option>ALTO</option>
+          <option>MODERADO</option><option>BAIXO</option>
+        </select>
+        <select id="pa-filter-status" onchange="PA.onFilter()">
+          <option value="">Todos os Status</option>
+          <option>CONCLUÍDO</option><option>ATRASADO</option><option>EM ANDAMENTO</option>
+        </select>
+        <select id="pa-filter-gerente" onchange="PA.onFilter()"><option value="">Todos os Gerentes</option></select>
+        <button class="btn-clear-filter" onclick="PA.clearFilters()">✕ Limpar</button>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card card-primary">
+          <div class="card-icon">⬡</div>
+          <div class="card-value" id="pa-total">—</div>
+          <div class="card-label">Total de Ações</div>
+        </div>
+        <div class="card card-success">
+          <div class="card-icon">✓</div>
+          <div class="card-value" id="pa-concluido">—</div>
+          <div class="card-label">Concluídas</div>
+        </div>
+        <div class="card card-danger">
+          <div class="card-icon">!</div>
+          <div class="card-value" id="pa-atrasado">—</div>
+          <div class="card-label">Atrasadas</div>
+        </div>
+        <div class="card card-warning">
+          <div class="card-icon">↻</div>
+          <div class="card-value" id="pa-andamento">—</div>
+          <div class="card-label">Em Andamento</div>
+        </div>
+        <div class="card card-teal">
+          <div class="card-icon">%</div>
+          <div class="card-value" id="pa-pct">—</div>
+          <div class="card-label">% Concluído</div>
+        </div>
+      </div>
+
+      <div class="section-label">% por Classificação</div>
+      <div class="cards-grid cards-classificacao">
+        <div class="card card-primary">
+          <div class="card-value" id="pa-cl-normativa">—</div>
+          <div class="card-label">Ação Normativa</div>
+          <div class="card-pct" id="pa-cl-normativa-pct">—</div>
+        </div>
+        <div class="card card-teal">
+          <div class="card-value" id="pa-cl-melhoria">—</div>
+          <div class="card-label">Sugestão de Melhoria</div>
+          <div class="card-pct" id="pa-cl-melhoria-pct">—</div>
+        </div>
+        <div class="card card-info">
+          <div class="card-value" id="pa-cl-engenharia">—</div>
+          <div class="card-label">Engenharia</div>
+          <div class="card-pct" id="pa-cl-engenharia-pct">—</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3 class="chart-title">Status das Ações</h3>
+          <div class="chart-container chart-donut">
+            <canvas id="pa-chart-status"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Ações por Criticidade</h3>
+          <div class="chart-container">
+            <canvas id="pa-chart-crit"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de linha: evolução mensal -->
+      <div class="chart-card chart-card-full">
+        <h3 class="chart-title">Evolução Mensal das Ações</h3>
+        <div class="chart-container" style="height:260px">
+          <canvas id="pa-chart-evolucao"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Ações de Controle</h3>
+          <input type="text" class="search-input" id="pa-search" placeholder="Buscar ação, setor, responsável…" oninput="PA.search(this.value)">
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th><th>Setor</th><th>Posto</th><th>Criticidade</th>
+                <th>Ação de Controle</th><th>Responsável</th>
+                <th>Data Prevista</th><th>Status</th>
+                <th class="admin-only" style="min-width:100px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="pa-tbody">
+              <tr><td colspan="9" class="table-loading">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer"><span id="pa-count">—</span></div>
+      </div>
+    </section>
+
+    <!-- ==================== FISIOTERAPIA TAB ==================== -->
+    <section class="tab-content" id="tab-fisio">
+
+      <div class="filter-bar">
+        <select id="fisio-filter-cliente" onchange="FISIO.onFilter()" class="admin-only"><option value="">Todos os Clientes</option></select>
+        <select id="fisio-filter-setor"   onchange="FISIO.onFilter()"><option value="">Todos os Setores</option></select>
+        <select id="fisio-filter-mes"     onchange="FISIO.onFilter()">
+          <option value="">Todos os Meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="fisio-filter-ano"     onchange="FISIO.onFilter()"><option value="">Todos os Anos</option></select>
+        <select id="fisio-filter-parecer" onchange="FISIO.onFilter()">
+          <option value="">Todos os Pareceres</option>
+          <option>Aprovado</option><option>Aprovado com Restrição</option><option>Reprovado</option>
+        </select>
+        <select id="fisio-filter-genero"  onchange="FISIO.onFilter()">
+          <option value="">Todos os Gêneros</option>
+          <option>Masculino</option><option>Feminino</option>
+        </select>
+        <button class="btn-clear-filter" onclick="FISIO.clearFilters()">✕ Limpar</button>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card card-primary">
+          <div class="card-icon">♥</div>
+          <div class="card-value" id="fisio-total">—</div>
+          <div class="card-label">Total de Atendimentos</div>
+        </div>
+        <div class="card card-success">
+          <div class="card-icon">✓</div>
+          <div class="card-value" id="fisio-aprovado">—</div>
+          <div class="card-label">Aprovados</div>
+          <div class="card-pct" id="fisio-aprovado-pct">—</div>
+        </div>
+        <div class="card card-warning">
+          <div class="card-icon">◆</div>
+          <div class="card-value" id="fisio-restricao">—</div>
+          <div class="card-label">Aprovados c/ Restrição</div>
+          <div class="card-pct" id="fisio-restricao-pct">—</div>
+        </div>
+        <div class="card card-danger">
+          <div class="card-icon">✕</div>
+          <div class="card-value" id="fisio-reprovado">—</div>
+          <div class="card-label">Reprovados</div>
+          <div class="card-pct" id="fisio-reprovado-pct">—</div>
+        </div>
+        <div class="card card-teal">
+          <div class="card-icon">%</div>
+          <div class="card-value" id="fisio-pct-aprov">—</div>
+          <div class="card-label">% de Aprovação</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3 class="chart-title">Distribuição por Gênero</h3>
+          <div class="chart-container chart-donut">
+            <canvas id="fisio-chart-genero"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Distribuição por Faixa Etária</h3>
+          <div class="chart-container">
+            <canvas id="fisio-chart-faixa"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card chart-card-full">
+        <h3 class="chart-title">Evolução Mensal — Parecer Fisioterapia</h3>
+        <div class="chart-container" style="height:260px">
+          <canvas id="fisio-chart-evolucao"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Registros de Admissional</h3>
+          <input type="text" class="search-input" id="fisio-search" placeholder="Buscar nome, setor…" oninput="FISIO.search(this.value)">
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th><th>Nome</th><th>Setor</th>
+                <th>Data</th><th>Mês</th><th>Gênero</th>
+                <th>Idade</th><th>Faixa Etária</th><th>Parecer</th>
+                <th class="admin-only" style="min-width:100px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="fisio-tbody">
+              <tr><td colspan="10" class="table-loading">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer"><span id="fisio-count">—</span></div>
+      </div>
+    </section>
+
+    <!-- ==================== LANÇAMENTOS TAB ==================== -->
+    <section class="tab-content" id="tab-lancamentos">
+
+      <div class="lanc-nav">
+        <button class="lanc-tab active" data-form="form-aet-new">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Novo Lançamento AET
+        </button>
+        <button class="lanc-tab" data-form="form-pa-new">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Nova Ação (PA)
+        </button>
+        <button class="lanc-tab" data-form="form-fisio-new">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Admissional Fisioterapia
+        </button>
+      </div>
+
+      <!-- FORM: Novo Lançamento AET -->
+      <div class="form-card active" id="form-aet-new">
+        <div class="form-card-title">
+          <h3>Lançamento — Análise Ergonômica do Trabalho</h3>
+          <p class="form-subtitle">Campos com * são obrigatórios. Use ＋ / － para gerenciar as opções de cada campo.</p>
+        </div>
+        <form onsubmit="Forms.submitAET(event)">
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label>Cliente</label>
+              <div class="field-managed">
+                <select id="f-aet-CLIENTE" name="CLIENTE">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CLIENTE','f-aet-CLIENTE')" title="Adicionar cliente">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CLIENTE','f-aet-CLIENTE')" title="Remover cliente">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Setor *</label>
+              <div class="field-managed">
+                <select id="f-aet-SETOR" name="SETOR" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('SETOR_AET','f-aet-SETOR')" title="Adicionar setor">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('SETOR_AET','f-aet-SETOR')" title="Remover setor">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Posto de Trabalho *</label>
+              <div class="field-managed">
+                <select id="f-aet-POSTO_TRABALHO" name="POSTO_TRABALHO" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('POSTO_AET','f-aet-POSTO_TRABALHO')" title="Adicionar posto">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('POSTO_AET','f-aet-POSTO_TRABALHO')" title="Remover posto">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Criticidade Atual *</label>
+              <div class="field-managed">
+                <select id="f-aet-CRITICIDADE_ATUAL" name="CRITICIDADE_ATUAL" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CRITICIDADE_AET','f-aet-CRITICIDADE_ATUAL')" title="Adicionar opção">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CRITICIDADE_AET','f-aet-CRITICIDADE_ATUAL')" title="Remover opção">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Gênero do Posto *</label>
+              <div class="field-managed">
+                <select id="f-aet-POSTO_GENERO" name="POSTO_GENERO" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('GENERO_AET','f-aet-POSTO_GENERO')" title="Adicionar gênero">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('GENERO_AET','f-aet-POSTO_GENERO')" title="Remover gênero">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Gerente Responsável</label>
+              <div class="field-managed">
+                <select id="f-aet-GERENTE" name="GERENTE">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('GERENTE_AET','f-aet-GERENTE')" title="Adicionar gerente">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('GERENTE_AET','f-aet-GERENTE')" title="Remover gerente">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Mês</label>
+              <select name="MES">
+                <option value="">Selecione…</option>
+                <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
+                <option>Abril</option><option>Maio</option><option>Junho</option>
+                <option>Julho</option><option>Agosto</option><option>Setembro</option>
+                <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Ano</label>
+              <input type="number" name="ANO" min="2000" max="2099" placeholder="Ex: 2025">
+            </div>
+
+            <div class="form-group form-full">
+              <label>Observações</label>
+              <textarea name="OBSERVACOES" rows="3" placeholder="Observações sobre o posto…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="reset" class="btn-secondary">Limpar</button>
+            <button type="submit" class="btn-primary" id="btn-submit-aet">Salvar Lançamento</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- FORM: Nova Ação PA -->
+      <div class="form-card" id="form-pa-new">
+        <div class="form-card-title">
+          <h3>Lançamento — Ação de Controle (PA)</h3>
+          <p class="form-subtitle">Campos com * são obrigatórios. Use ＋ / － para gerenciar as opções de cada campo.</p>
+        </div>
+        <form onsubmit="Forms.submitPA(event)">
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label>Cliente</label>
+              <div class="field-managed">
+                <select id="f-pa-CLIENTE" name="CLIENTE">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CLIENTE','f-pa-CLIENTE')" title="Adicionar cliente">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CLIENTE','f-pa-CLIENTE')" title="Remover cliente">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Setor *</label>
+              <div class="field-managed">
+                <select id="f-pa-SETOR" name="SETOR" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('SETOR_PA','f-pa-SETOR')" title="Adicionar setor">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('SETOR_PA','f-pa-SETOR')" title="Remover setor">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Posto de Trabalho *</label>
+              <div class="field-managed">
+                <select id="f-pa-POSTO_TRABALHO" name="POSTO_TRABALHO" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('POSTO_PA','f-pa-POSTO_TRABALHO')" title="Adicionar posto">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('POSTO_PA','f-pa-POSTO_TRABALHO')" title="Remover posto">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Criticidade *</label>
+              <div class="field-managed">
+                <select id="f-pa-CRITICIDADE" name="CRITICIDADE" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CRITICIDADE_PA','f-pa-CRITICIDADE')" title="Adicionar opção">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CRITICIDADE_PA','f-pa-CRITICIDADE')" title="Remover opção">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Classificação</label>
+              <div class="field-managed">
+                <select id="f-pa-CLASSIFICACAO" name="CLASSIFICACAO">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CLASSIFICACAO_PA','f-pa-CLASSIFICACAO')" title="Adicionar classificação">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CLASSIFICACAO_PA','f-pa-CLASSIFICACAO')" title="Remover classificação">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Gerente</label>
+              <div class="field-managed">
+                <select id="f-pa-GERENTE" name="GERENTE">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('GERENTE_PA','f-pa-GERENTE')" title="Adicionar gerente">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('GERENTE_PA','f-pa-GERENTE')" title="Remover gerente">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Responsável</label>
+              <div class="field-managed">
+                <select id="f-pa-RESPONSAVEL" name="RESPONSAVEL">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('RESPONSAVEL_PA','f-pa-RESPONSAVEL')" title="Adicionar responsável">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('RESPONSAVEL_PA','f-pa-RESPONSAVEL')" title="Remover responsável">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Estimativa de Valor (R$)</label>
+              <input type="number" name="ESTIMATIVA_VALOR" step="0.01" min="0" placeholder="0,00">
+            </div>
+
+            <div class="form-group">
+              <label>Data Prevista</label>
+              <input type="date" name="DATA_PREVISTA">
+            </div>
+
+            <div class="form-group">
+              <label>Data de Conclusão</label>
+              <input type="date" name="DATA_CONCLUSAO">
+            </div>
+
+            <div class="form-group">
+              <label>Status</label>
+              <select name="STATUS">
+                <option value="">Selecione…</option>
+                <option value="CONCLUÍDO">Concluído</option>
+                <option value="EM ANDAMENTO">Em Andamento</option>
+                <option value="NÃO INICIADO">Não Iniciado</option>
+              </select>
+            </div>
+
+            <div class="form-group form-full">
+              <label>Ação de Controle *</label>
+              <textarea name="ACAO_CONTROLE" rows="4" required placeholder="Descreva a ação de controle ergonômico…"></textarea>
+            </div>
+
+            <div class="form-group form-full">
+              <label>Observações</label>
+              <textarea name="OBSERVACOES" rows="3" placeholder="Observações adicionais…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="reset" class="btn-secondary">Limpar</button>
+            <button type="submit" class="btn-primary" id="btn-submit-pa">Salvar Ação</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- FORM: Admissional Fisioterapia -->
+      <div class="form-card" id="form-fisio-new">
+        <div class="form-card-title">
+          <h3>Lançamento — Admissional Fisioterapia</h3>
+          <p class="form-subtitle">Campos com * são obrigatórios. Use ＋ / － para gerenciar as opções de cada campo.</p>
+        </div>
+        <form onsubmit="Forms.submitFISIO(event)">
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label>Cliente</label>
+              <div class="field-managed">
+                <select id="f-fisio-CLIENTE" name="CLIENTE">
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('CLIENTE','f-fisio-CLIENTE')" title="Adicionar cliente">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('CLIENTE','f-fisio-CLIENTE')" title="Remover cliente">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Nome do Funcionário *</label>
+              <input type="text" name="NOME" required placeholder="Nome completo">
+            </div>
+
+            <div class="form-group">
+              <label>Setor *</label>
+              <div class="field-managed">
+                <select id="f-fisio-SETOR" name="SETOR" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('SETOR_FISIO','f-fisio-SETOR')" title="Adicionar setor">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('SETOR_FISIO','f-fisio-SETOR')" title="Remover setor">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Data do Exame *</label>
+              <input type="date" name="DATA_EXAME" required>
+            </div>
+
+            <div class="form-group">
+              <label>Mês</label>
+              <select name="MES">
+                <option value="">Selecione…</option>
+                <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
+                <option>Abril</option><option>Maio</option><option>Junho</option>
+                <option>Julho</option><option>Agosto</option><option>Setembro</option>
+                <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Ano</label>
+              <input type="number" name="ANO" min="2000" max="2099" placeholder="Ex: 2025">
+            </div>
+
+            <div class="form-group">
+              <label>Gênero *</label>
+              <div class="field-managed">
+                <select id="f-fisio-GENERO" name="GENERO" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('GENERO_FISIO','f-fisio-GENERO')" title="Adicionar gênero">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('GENERO_FISIO','f-fisio-GENERO')" title="Remover gênero">－</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Idade</label>
+              <input type="number" name="IDADE" min="14" max="99" placeholder="Ex: 35" oninput="Forms.autoFaixaEtaria(this.value)">
+            </div>
+
+            <div class="form-group">
+              <label>Faixa Etária</label>
+              <input type="text" name="FAIXA_ETARIA" id="f-fisio-FAIXA_ETARIA" placeholder="Preenchida automaticamente" readonly>
+            </div>
+
+            <div class="form-group">
+              <label>Parecer Fisioterapia *</label>
+              <div class="field-managed">
+                <select id="f-fisio-PARECER" name="PARECER" required>
+                  <option value="">Selecione…</option>
+                </select>
+                <button type="button" class="btn-opt-add" onclick="Options.addUI('PARECER_FISIO','f-fisio-PARECER')" title="Adicionar parecer">＋</button>
+                <button type="button" class="btn-opt-del" onclick="Options.removeUI('PARECER_FISIO','f-fisio-PARECER')" title="Remover parecer">－</button>
+              </div>
+            </div>
+
+            <div class="form-group form-full">
+              <label>Observações</label>
+              <textarea name="OBSERVACOES" rows="3" placeholder="Observações clínicas, restrições, recomendações…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="reset" class="btn-secondary" onclick="Forms.resetFisio()">Limpar</button>
+            <button type="submit" class="btn-primary" id="btn-submit-fisio">Salvar Admissional</button>
+          </div>
+        </form>
+      </div>
+
+    </section>
+
+  </main>
+</div><!-- /app-wrapper -->
+
+<!-- ===== MODAL EDIÇÃO ===== -->
+<div class="modal-overlay" id="modal" onclick="Modal.closeOnOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Editar Registro</h3>
+      <button class="modal-close" onclick="Modal.close()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL CLIENTES ===== -->
+<div class="modal-overlay" id="clientModal" onclick="ClientMgr.closeOnOverlay(event)">
+  <div class="modal-box modal-sm">
+    <div class="modal-header">
+      <h3>Gerenciar Clientes</h3>
+      <button class="modal-close" onclick="ClientMgr.close()">×</button>
+    </div>
+    <div class="modal-body" id="clientModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
