@@ -307,13 +307,7 @@
       <div class="filter-bar">
         <select id="fisio-filter-cliente" onchange="FISIO.onFilter()" class="admin-only"><option value="">Todos os Clientes</option></select>
         <select id="fisio-filter-setor"   onchange="FISIO.onFilter()"><option value="">Todos os Setores</option></select>
-        <select id="fisio-filter-mes"     onchange="FISIO.onFilter()">
-          <option value="">Todos os Meses</option>
-          <option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option><option value="Março">Março</option>
-          <option value="Abril">Abril</option><option value="Maio">Maio</option><option value="Junho">Junho</option>
-          <option value="Julho">Julho</option><option value="Agosto">Agosto</option><option value="Setembro">Setembro</option>
-          <option value="Outubro">Outubro</option><option value="Novembro">Novembro</option><option value="Dezembro">Dezembro</option>
-        </select>
+        <select id="fisio-filter-mes" onchange="FISIO.onFilter()"><option value="">Todos os Meses</option></select>
         <select id="fisio-filter-ano"     onchange="FISIO.onFilter()"><option value="">Todos os Anos</option></select>
         <select id="fisio-filter-parecer" onchange="FISIO.onFilter()">
           <option value="">Todos os Pareceres</option>
@@ -783,6 +777,6 @@
 <!-- ===== TOAST ===== -->
 <div class="toast" id="toast"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
