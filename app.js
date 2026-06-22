@@ -6,7 +6,7 @@
 // ================================================================
 
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbzkkG-HAbqLGbInZYH2zPE02QAw0czwXZ6QT0b_sqMVBSv1CreAwv4aYmXvIpgQryah/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzoAmaTK6uZ5Zr_QlCMtPPgHa9iuifyksxP_GHkUusZjVYN6J5X38n4MpiZhC39KUPGOA/exec',
   SHEETS: { AET: 'AET', PA: 'PA', CLIENTES: 'CLIENTES', FISIO: 'FISIO' }
 };
 
