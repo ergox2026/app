@@ -1531,6 +1531,15 @@ function setupNav() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { Modal.close(); ClientMgr.close(); }
   });
+
+  // Campos de busca via addEventListener (mais confiável que oninput inline)
+  const bindSearch = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => fn(el.value));
+  };
+  bindSearch('aet-search',   q => AET.search(q));
+  bindSearch('pa-search',    q => PA.search(q));
+  bindSearch('fisio-search', q => FISIO.search(q));
 }
 
 // ================================================================
