@@ -1136,17 +1136,21 @@ const FISIO = {
   f: { cliente: '', setor: '', mes: '', ano: '', parecer: '', genero: '', q: '' },
 
   load(data) {
-    State.fisio = Auth.isClient()
+    const raw = Auth.isClient()
       ? data.filter(r => (r.CLIENTE || '') === (State.session.cliente || ''))
       : data;
+
+    // Pré-calcula _mesNome uma vez só; evita chamar normalizeMes dentro de callbacks de filter
+    State.fisio = raw.map(r => ({ ...r, _mesNome: normalizeMes(r.MES) }));
+
     Utils.fillSelect('fisio-filter-setor', Utils.unique(State.fisio, 'SETOR'));
     Utils.fillSelect('fisio-filter-ano',   Utils.unique(State.fisio, 'ANO').map(String));
     if (Auth.isAdmin()) Utils.fillSelect('fisio-filter-cliente', Utils.unique(State.fisio, 'CLIENTE'));
 
-    // Popula filtro de mês apenas com meses que existem nos dados
+    // Filtro de mês: só meses com lançamentos, em ordem
     const mesesOrdem = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                         'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const mesesPresentes = [...new Set(State.fisio.map(r => normalizeMes(r.MES)).filter(Boolean))];
+    const mesesPresentes = [...new Set(State.fisio.map(r => r._mesNome).filter(Boolean))];
     mesesPresentes.sort((a, b) => mesesOrdem.indexOf(a) - mesesOrdem.indexOf(b));
     Utils.fillSelect('fisio-filter-mes', mesesPresentes);
 
@@ -1179,20 +1183,18 @@ const FISIO = {
     const f = this.f;
     if (f.cliente) d = d.filter(r => (r.CLIENTE || '') === f.cliente);
     if (f.setor)   d = d.filter(r => r.SETOR === f.setor);
-    // MES pode ser número (1-12) ou nome ("Maio") — normaliza para nome antes de comparar
-    if (f.mes)     d = d.filter(r => normalizeMes(r.MES) === f.mes);
+    if (f.mes)     d = d.filter(r => r._mesNome === f.mes);
     if (f.ano)     d = d.filter(r => String(r.ANO || '') === f.ano);
     if (f.parecer) d = d.filter(r => (r.PARECER || '') === f.parecer);
-    if (f.genero)  d = d.filter(r => (r.GENERO || '') === f.genero);
+    if (f.genero)  d = d.filter(r => (r.GENERO  || '') === f.genero);
     if (f.q) {
       const q = f.q.toLowerCase();
-      d = d.filter(r => {
-        const mes = normalizeMes(r.MES).toLowerCase();
-        return (r.NOME   || '').toLowerCase().includes(q) ||
-               (r.SETOR  || '').toLowerCase().includes(q) ||
-               (r.PARECER|| '').toLowerCase().includes(q) ||
-               mes.includes(q);
-      });
+      d = d.filter(r =>
+        (r.NOME      || '').toLowerCase().includes(q) ||
+        (r.SETOR     || '').toLowerCase().includes(q) ||
+        (r.PARECER   || '').toLowerCase().includes(q) ||
+        (r._mesNome  || '').toLowerCase().includes(q)
+      );
     }
     this.renderCards(d);
     this.renderCharts(d);
@@ -1295,7 +1297,7 @@ const FISIO = {
         <td>${Utils.esc(r.NOME) || '—'}</td>
         <td>${Utils.esc(r.SETOR) || '—'}</td>
         <td>${Utils.formatDate(r.DATA_EXAME)}</td>
-        <td>${Utils.esc(normalizeMes(r.MES)) || '—'}</td>
+        <td>${Utils.esc(r._mesNome) || '—'}</td>
         <td>${Utils.esc(r.GENERO) || '—'}</td>
         <td>${Utils.esc(r.IDADE) || '—'}</td>
         <td>${Utils.esc(r.FAIXA_ETARIA) || '—'}</td>
