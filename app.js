@@ -1532,14 +1532,19 @@ function setupNav() {
     if (e.key === 'Escape') { Modal.close(); ClientMgr.close(); }
   });
 
-  // Campos de busca via addEventListener (mais confiável que oninput inline)
-  const bindSearch = (id, fn) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => fn(el.value));
-  };
-  bindSearch('aet-search',   q => AET.search(q));
-  bindSearch('pa-search',    q => PA.search(q));
-  bindSearch('fisio-search', q => FISIO.search(q));
+  // Event delegation — captura input e change de qualquer filho do document
+  document.addEventListener('input', e => {
+    const id = e.target.id;
+    if      (id === 'aet-search')   AET.search(e.target.value);
+    else if (id === 'pa-search')    PA.search(e.target.value);
+    else if (id === 'fisio-search') FISIO.search(e.target.value);
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.closest && e.target.closest('#tab-aet .filter-bar'))   AET.onFilter();
+    if (e.target.closest && e.target.closest('#tab-pa .filter-bar'))    PA.onFilter();
+    if (e.target.closest && e.target.closest('#tab-fisio .filter-bar')) FISIO.onFilter();
+  });
 }
 
 // ================================================================
