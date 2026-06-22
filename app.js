@@ -1532,13 +1532,23 @@ function setupNav() {
     if (e.key === 'Escape') { Modal.close(); ClientMgr.close(); }
   });
 
-  // Busca e filtros via event delegation (funciona independente de CSP)
-  document.addEventListener('input', e => {
+  // Busca — delegation no document para input E keyup (máxima compatibilidade)
+  const handleSearch = e => {
     const id = e.target.id;
     if      (id === 'aet-search')   AET.search(e.target.value);
     else if (id === 'pa-search')    PA.search(e.target.value);
     else if (id === 'fisio-search') FISIO.search(e.target.value);
-  });
+  };
+  document.addEventListener('input', handleSearch);
+  document.addEventListener('keyup',  handleSearch);
+
+  // Setar oninput diretamente nos elementos como camada adicional
+  const s1 = document.getElementById('aet-search');
+  const s2 = document.getElementById('pa-search');
+  const s3 = document.getElementById('fisio-search');
+  if (s1) s1.oninput = () => AET.search(s1.value);
+  if (s2) s2.oninput = () => PA.search(s2.value);
+  if (s3) s3.oninput = () => FISIO.search(s3.value);
 
   // Filtros — change delegation por aba (evita chamar módulo errado)
   const filterIds = {
