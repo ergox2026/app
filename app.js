@@ -1532,7 +1532,7 @@ function setupNav() {
     if (e.key === 'Escape') { Modal.close(); ClientMgr.close(); }
   });
 
-  // Event delegation — captura input e change de qualquer filho do document
+  // Busca e filtros via event delegation (funciona independente de CSP)
   document.addEventListener('input', e => {
     const id = e.target.id;
     if      (id === 'aet-search')   AET.search(e.target.value);
@@ -1540,10 +1540,20 @@ function setupNav() {
     else if (id === 'fisio-search') FISIO.search(e.target.value);
   });
 
+  // Filtros — change delegation por aba (evita chamar módulo errado)
+  const filterIds = {
+    'aet-filter-cliente':'aet','aet-filter-setor':'aet','aet-filter-criticidade':'aet',
+    'aet-filter-genero':'aet','aet-filter-mes':'aet','aet-filter-ano':'aet','aet-filter-gerente':'aet',
+    'pa-filter-cliente':'pa','pa-filter-setor':'pa','pa-filter-criticidade':'pa',
+    'pa-filter-status':'pa','pa-filter-gerente':'pa',
+    'fisio-filter-cliente':'fisio','fisio-filter-setor':'fisio','fisio-filter-mes':'fisio',
+    'fisio-filter-ano':'fisio','fisio-filter-parecer':'fisio','fisio-filter-genero':'fisio'
+  };
   document.addEventListener('change', e => {
-    if (e.target.closest && e.target.closest('#tab-aet .filter-bar'))   AET.onFilter();
-    if (e.target.closest && e.target.closest('#tab-pa .filter-bar'))    PA.onFilter();
-    if (e.target.closest && e.target.closest('#tab-fisio .filter-bar')) FISIO.onFilter();
+    const tab = filterIds[e.target.id];
+    if      (tab === 'aet')   AET.onFilter();
+    else if (tab === 'pa')    PA.onFilter();
+    else if (tab === 'fisio') FISIO.onFilter();
   });
 }
 
