@@ -1167,7 +1167,11 @@ const FISIO = {
     this.apply();
   },
 
-  search(q) { this.f.q = q; this.apply(); },
+  search(q) {
+    console.log('[FISIO.search] q=', q, 'State.fisio.length=', State.fisio.length, '_mesNome sample=', (State.fisio[0] || {})._mesNome);
+    this.f.q = q;
+    this.apply();
+  },
 
   clearFilters() {
     this.f = { cliente: '', setor: '', mes: '', ano: '', parecer: '', genero: '', q: '' };
