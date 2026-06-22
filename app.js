@@ -1167,11 +1167,7 @@ const FISIO = {
     this.apply();
   },
 
-  search(q) {
-    console.log('[FISIO.search] q=', q, 'State.fisio.length=', State.fisio.length, '_mesNome sample=', (State.fisio[0] || {})._mesNome);
-    this.f.q = q;
-    this.apply();
-  },
+  search(q) { this.f.q = q; this.apply(); },
 
   clearFilters() {
     this.f = { cliente: '', setor: '', mes: '', ano: '', parecer: '', genero: '', q: '' };
@@ -1194,10 +1190,10 @@ const FISIO = {
     if (f.q) {
       const q = f.q.toLowerCase();
       d = d.filter(r =>
-        (r.NOME      || '').toLowerCase().includes(q) ||
-        (r.SETOR     || '').toLowerCase().includes(q) ||
-        (r.PARECER   || '').toLowerCase().includes(q) ||
-        (r._mesNome  || '').toLowerCase().includes(q)
+        String(r.NOME     || '').toLowerCase().includes(q) ||
+        String(r.SETOR    || '').toLowerCase().includes(q) ||
+        String(r.PARECER  || '').toLowerCase().includes(q) ||
+        String(r._mesNome || '').toLowerCase().includes(q)
       );
     }
     this.renderCards(d);
