@@ -1142,6 +1142,14 @@ const FISIO = {
     Utils.fillSelect('fisio-filter-setor', Utils.unique(State.fisio, 'SETOR'));
     Utils.fillSelect('fisio-filter-ano',   Utils.unique(State.fisio, 'ANO').map(String));
     if (Auth.isAdmin()) Utils.fillSelect('fisio-filter-cliente', Utils.unique(State.fisio, 'CLIENTE'));
+
+    // Popula filtro de mês apenas com meses que existem nos dados
+    const mesesOrdem = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const mesesPresentes = [...new Set(State.fisio.map(r => normalizeMes(r.MES)).filter(Boolean))];
+    mesesPresentes.sort((a, b) => mesesOrdem.indexOf(a) - mesesOrdem.indexOf(b));
+    Utils.fillSelect('fisio-filter-mes', mesesPresentes);
+
     this.apply();
   },
 
@@ -1178,11 +1186,13 @@ const FISIO = {
     if (f.genero)  d = d.filter(r => (r.GENERO || '') === f.genero);
     if (f.q) {
       const q = f.q.toLowerCase();
-      d = d.filter(r =>
-        (r.NOME  || '').toLowerCase().includes(q) ||
-        (r.SETOR || '').toLowerCase().includes(q) ||
-        normalizeMes(r.MES).toLowerCase().includes(q)
-      );
+      d = d.filter(r => {
+        const mes = normalizeMes(r.MES).toLowerCase();
+        return (r.NOME   || '').toLowerCase().includes(q) ||
+               (r.SETOR  || '').toLowerCase().includes(q) ||
+               (r.PARECER|| '').toLowerCase().includes(q) ||
+               mes.includes(q);
+      });
     }
     this.renderCards(d);
     this.renderCharts(d);
