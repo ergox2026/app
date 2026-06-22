@@ -1113,6 +1113,16 @@ const Modal = {
 // ================================================================
 //  FISIO MODULE
 // ================================================================
+// Converte MES armazenado (número ou nome) para nome por extenso
+const MES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function normalizeMes(v) {
+  const s = String(v || '').trim();
+  const n = parseInt(s, 10);
+  if (!isNaN(n) && n >= 1 && n <= 12) return MES_NOMES[n - 1];
+  return s; // já é nome por extenso
+}
+
 function calcFaixaEtaria(idade) {
   const i = parseInt(idade) || 0;
   if (i < 29) return '18-28';
@@ -1161,8 +1171,8 @@ const FISIO = {
     const f = this.f;
     if (f.cliente) d = d.filter(r => (r.CLIENTE || '') === f.cliente);
     if (f.setor)   d = d.filter(r => r.SETOR === f.setor);
-    // MES armazenado como número (1-12); comparar como string
-    if (f.mes)     d = d.filter(r => String(r.MES || '') === f.mes);
+    // MES pode ser número (1-12) ou nome ("Maio") — normaliza para nome antes de comparar
+    if (f.mes)     d = d.filter(r => normalizeMes(r.MES) === f.mes);
     if (f.ano)     d = d.filter(r => String(r.ANO || '') === f.ano);
     if (f.parecer) d = d.filter(r => (r.PARECER || '') === f.parecer);
     if (f.genero)  d = d.filter(r => (r.GENERO || '') === f.genero);
@@ -1170,7 +1180,8 @@ const FISIO = {
       const q = f.q.toLowerCase();
       d = d.filter(r =>
         (r.NOME  || '').toLowerCase().includes(q) ||
-        (r.SETOR || '').toLowerCase().includes(q)
+        (r.SETOR || '').toLowerCase().includes(q) ||
+        normalizeMes(r.MES).toLowerCase().includes(q)
       );
     }
     this.renderCards(d);
@@ -1274,7 +1285,7 @@ const FISIO = {
         <td>${Utils.esc(r.NOME) || '—'}</td>
         <td>${Utils.esc(r.SETOR) || '—'}</td>
         <td>${Utils.formatDate(r.DATA_EXAME)}</td>
-        <td>${Utils.esc(r.MES) || '—'}</td>
+        <td>${Utils.esc(normalizeMes(r.MES)) || '—'}</td>
         <td>${Utils.esc(r.GENERO) || '—'}</td>
         <td>${Utils.esc(r.IDADE) || '—'}</td>
         <td>${Utils.esc(r.FAIXA_ETARIA) || '—'}</td>
