@@ -143,6 +143,32 @@ const Auth = {
       el.style.display = this.isAdmin() ? '' : 'none';
     });
 
+    // Para admin: sincroniza lista de clientes da API para os dropdowns dos formulários
+    if (this.isAdmin()) {
+      API.readClients().then(clients => {
+        clients.filter(c => c.CLIENTE && c.TIPO !== 'admin')
+               .forEach(c => Options.add('CLIENTE', c.CLIENTE));
+        ['f-aet-CLIENTE','f-pa-CLIENTE','f-fisio-CLIENTE']
+          .forEach(id => Options.populate(id, 'CLIENTE'));
+      }).catch(() => {});
+    }
+
+    // Para usuário cliente: pré-preenche e trava o campo CLIENTE nos formulários
+    if (this.isClient() && s.cliente) {
+      ['f-aet-CLIENTE','f-pa-CLIENTE','f-fisio-CLIENTE'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        // Garante que a opção existe e está selecionada
+        if (![...el.options].some(o => o.value === s.cliente)) {
+          const o = document.createElement('option');
+          o.value = o.textContent = s.cliente;
+          el.appendChild(o);
+        }
+        el.value    = s.cliente;
+        el.disabled = true;
+      });
+    }
+
     // Navegar para aba inicial conforme perfil
     const startTab = this.isAdmin() ? 'lancamentos' : 'aet';
     const startBtn = document.querySelector(`[data-tab="${startTab}"]`);
@@ -650,7 +676,7 @@ const AET = {
     const isAdmin = Auth.isAdmin();
     document.getElementById('aet-count').textContent = `${d.length} registro${d.length !== 1 ? 's' : ''}`;
     if (!d.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="table-loading">Nenhum registro encontrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="table-loading">Nenhum registro encontrado.</td></tr>';
       return;
     }
     tbody.innerHTML = d.map(r => `
@@ -662,6 +688,8 @@ const AET = {
         <td>${Utils.critBadge(r.CRITICIDADE_ATUAL)}</td>
         <td>${Utils.esc(r.POSTO_GENERO) || '—'}</td>
         <td>${Utils.esc(r.GERENTE) || '—'}</td>
+        <td title="${Utils.esc(r.OBSERVACOES)}">${Utils.esc(Utils.truncate(r.OBSERVACOES, 60)) || '—'}</td>
+        <td title="${Utils.esc(r.CONDICAO_UNISSEX)}">${Utils.esc(Utils.truncate(r.CONDICAO_UNISSEX, 60)) || '—'}</td>
         ${isAdmin ? `
         <td>
           <div class="action-group">
@@ -1331,6 +1359,7 @@ const Forms = {
     e.preventDefault();
     const btn  = document.getElementById('btn-submit-aet');
     const data = Object.fromEntries(new FormData(e.target).entries());
+    if (Auth.isClient() && State.session.cliente) data.CLIENTE = State.session.cliente;
     btn.disabled = true; btn.textContent = 'Salvando…';
     try {
       await API.create(CONFIG.SHEETS.AET, data);
@@ -1359,6 +1388,7 @@ const Forms = {
     e.preventDefault();
     const btn  = document.getElementById('btn-submit-fisio');
     const data = Object.fromEntries(new FormData(e.target).entries());
+    if (Auth.isClient() && State.session.cliente) data.CLIENTE = State.session.cliente;
     // Garante faixa etária calculada
     if (data.IDADE && !data.FAIXA_ETARIA) {
       data.FAIXA_ETARIA = calcFaixaEtaria(data.IDADE);
@@ -1381,6 +1411,7 @@ const Forms = {
     e.preventDefault();
     const btn  = document.getElementById('btn-submit-pa');
     const data = Object.fromEntries(new FormData(e.target).entries());
+    if (Auth.isClient() && State.session.cliente) data.CLIENTE = State.session.cliente;
     btn.disabled = true; btn.textContent = 'Salvando…';
     try {
       await API.create(CONFIG.SHEETS.PA, data);
@@ -1482,8 +1513,8 @@ const ClientMgr = {
       // Adiciona às opções locais e atualiza os selects nos formulários
       if (cliente) {
         Options.add('CLIENTE', cliente);
-        Options.populate('f-aet-CLIENTE', 'CLIENTE');
-        Options.populate('f-pa-CLIENTE',  'CLIENTE');
+        ['f-aet-CLIENTE','f-pa-CLIENTE','f-fisio-CLIENTE']
+          .forEach(id => Options.populate(id, 'CLIENTE'));
       }
       Utils.toast(`Cliente "${nome}" cadastrado!`, 'success');
       await this.render();
